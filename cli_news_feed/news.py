@@ -10,7 +10,7 @@ from rich.console import Console
 url = 'https://www.nrk.no/nyheter/siste.rss'
 # url = 'http://feeds.bbci.co.uk/news/world/rss.xml'
 console = Console(width=50)
-locale.setlocale(locale.LC_ALL, 'no_NO')
+locale.setlocale(locale.LC_ALL, 'nb_NO')
 
 
 def prettify_date(date_text):
