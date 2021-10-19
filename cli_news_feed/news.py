@@ -7,14 +7,13 @@ import dateutil.parser
 from rich.console import Console
 
 
-url = 'https://www.nrk.no/nyheter/siste.rss'
-# url = 'http://feeds.bbci.co.uk/news/world/rss.xml'
+url_nrk = 'https://www.nrk.no/nyheter/siste.rss'
+# url_bbc = 'http://feeds.bbci.co.uk/news/world/rss.xml'
 console = Console(width=50)
 locale.setlocale(locale.LC_ALL, 'nb_NO')
 
 
-def prettify_date(date_text):
-    date = datetime.strptime(date_text, '%Y-%m-%dT%H:%M:%S%z')
+def prettify_date(date):
     # Index 0 in months list is empty
     norwegian_month = list(calendar.month_name)[date.month]
     west = date.astimezone(dateutil.tz.gettz('W. Europe Standard Time'))
@@ -24,21 +23,23 @@ def prettify_date(date_text):
 def print_entries(entries, console):
     for entry in reversed(entries):
         console.rule(f'[bold #cff1fc] {entry.title}', align='center')
-        pretty_date = prettify_date(entry.updated)
+        pretty_date = prettify_date(dt_from_time(entry.published_parsed))
         console.print(pretty_date, justify='left', style='italic #ccfce2')
         console.print(entry.description, overflow='fold', end='\n\n')
 
 
+def dt_from_time(time_struct):
+    return datetime.fromtimestamp(time.mktime(time_struct))
+
+
 def main():
-    raw = feedparser.parse(url)
+    raw = feedparser.parse(url_nrk)
     print_entries(raw.entries, console)
-    last_updated = dateutil.parser.isoparse(raw.feed.updated)
+    last_updated = dt_from_time(raw.feed.updated_parsed)
     running = True
     while running:
-        raw = feedparser.parse(url)
-        # The isoparse-method from datetime is not
-        # designed to parse arbitrary ISO 8601 strings
-        latest_update = dateutil.parser.isoparse(raw.feed.updated)
+        raw = feedparser.parse(url_nrk)
+        latest_update = dt_from_time(raw.feed.updated_parsed)
         if latest_update > last_updated:
             last_updated = latest_update
             print_entries(raw.entries, console)
