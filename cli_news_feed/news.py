@@ -7,9 +7,11 @@ import dateutil.parser
 from rich.console import Console
 
 
-url_nrk = 'https://www.nrk.no/nyheter/siste.rss'
-# url_bbc = 'http://feeds.bbci.co.uk/news/world/rss.xml'
-console = Console(width=50)
+url = 'http://feeds.abcnews.com/abcnews/topstories'
+url = 'https://www.nrk.no/nyheter/siste.rss'
+url = 'http://feeds.bbci.co.uk/news/world/rss.xml'
+
+console = Console(width=55)
 locale.setlocale(locale.LC_ALL, 'nb_NO')
 
 
@@ -33,13 +35,14 @@ def dt_from_time(time_struct):
 
 
 def main():
-    raw = feedparser.parse(url_nrk)
+    raw = feedparser.parse(url)
+    console.print(raw)
     print_entries(raw.entries, console)
-    last_updated = dt_from_time(raw.feed.updated_parsed)
+    last_updated = dt_from_time(raw.entries[-1].published_parsed)
     running = True
     while running:
-        raw = feedparser.parse(url_nrk)
-        latest_update = dt_from_time(raw.feed.updated_parsed)
+        raw = feedparser.parse(url)
+        latest_update = dt_from_time(raw.entries[-1].published_parsed)
         if latest_update > last_updated:
             last_updated = latest_update
             print_entries(raw.entries, console)
