@@ -83,6 +83,8 @@ if not todos:
     print("No TODO comments found")
     exit(0)
 
+num_todos = len(todos)
+
 todos_by_file = groupby(todos, lambda tup: tup[1])
 
 total = 0
@@ -93,7 +95,8 @@ for filename, todos in todos_by_file:
         print(f" {pretty_age} on line {lineno}: {content}")
         total += age
 
-print(f"Total age of all TODOs is {total}")
+pretty_total_age = prettify(total)
+print(f"Found {num_todos} TODO comments: total age is {pretty_total_age}")
 
 # Exit with non-zero if we have too much debt
 exit(1 if total >= MAX_AGE else 0)
