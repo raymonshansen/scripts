@@ -8,8 +8,8 @@ from rich.console import Console
 
 
 url = 'http://feeds.abcnews.com/abcnews/topstories'
-url = 'https://www.nrk.no/nyheter/siste.rss'
 url = 'http://feeds.bbci.co.uk/news/world/rss.xml'
+url = 'https://www.nrk.no/nyheter/siste.rss'
 
 console = Console(width=55)
 locale.setlocale(locale.LC_ALL, 'nb_NO')
