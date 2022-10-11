@@ -1,73 +1,81 @@
 import requests
 import sys
 
+# This might change when Gulesider is updated
+BASE_URL = "https://www.gulesider.no/_next/data/icrEtxkRx7HLangO6erlo/nb/search/"
+
+
+def filter_empty(dictionary):
+    "Removes all empty values from the given dictionary"
+    return {k: v for k, v in dictionary.items() if v}
+
+
+def from_optional(dictionary: dict, *keys: str) -> str:
+    "Returns a string of the values of the given keys in the given dictionary"
+    return " ".join(filter(None, (dictionary.get(key) for key in keys)))
+
+
 def person(item: dict) -> dict[str, str]:
+    address = item["addresses"][0]
     return {
-        "name": item["name"]["firstName"] + " " + item["name"]["lastName"],
-        "street": item["addresses"][0]["streetName"] + " " + item["addresses"][0]["streetNumber"],
-        "area": item["addresses"][0]["postalCode"] + " " + item["addresses"][0]["postalArea"],
-        "phone_number": item["phones"][0]["number"]
+        "name": from_optional(item["name"], *item["name"].keys()),
+        "street": from_optional(address, "streetName", "streetNumber"),
+        "area": from_optional(address, "postalCode", "postalArea"),
+        "phone_numbers": "\n".join(
+            f"Tlf: {p['number']}" for p in item.get("phones", [])
+        ),
     }
 
-def company(item: dict) -> dict[str: str]:
+
+def company(item: dict) -> dict[str, str]:
+    address = item["addresses"][0]
     return {
         "name": item["name"],
-        "street": item["addresses"][0]["streetName"] + " " + item["addresses"][0]["streetNumber"],
-        "area": item["addresses"][0]["postalCode"] + " " + item["addresses"][0]["postalArea"],
-        "phone_number": item["phones"][0]["number"]
+        "street": from_optional(address, "streetName", "streetNumber"),
+        "area": from_optional(address, "postalCode", "postalArea"),
+        "phone_number": "\n".join(
+            f"Tlf: {p['number']}" for p in item.get("phones", [])
+        ),
     }
 
-# No arguments is handled py the PowerShell-script calling tlf.py
-include_num = False
-if len(sys.argv) == 2:
-    search_word: str = sys.argv[1]
-    if not search_word.isdigit():
-        include_num = True
-elif len(sys.argv) > 2:
-    sys.argv.pop(0)
-    if not sys.argv[0].isdigit():
-        search_word = ' '.join(sys.argv)
-        include_num = True
-    else:
-        print(f"Searching for {sys.argv[0]}...\n")
-        search_word = sys.argv[0]
 
-# Determine what type of search this would require, personal or company?
-resp = requests.get(f"https://one-back.gulesider.no/custom/superSearch/gulesider/{search_word}")
-match resp.content:
-    case b"cs":
-        num_type = "companies"
-    case b"ps":
-        num_type = "persons"
-    case _:
-        num_type = None
+def main(search_word: str):
+    # Searching for companies returns persons as well, so this url works for everything
+    resp = requests.get(
+        f"{BASE_URL}{search_word}/companies/1/0.json?query={search_word}&searchType=companies&page=1&id=0"
+    )
+    # The response is for a SPA built on Next.js, so we can dig
+    # directly into the page props for our data
+    raw_search_result = dict(resp.json())["pageProps"]
 
-if num_type:
-    url = f"https://www.gulesider.no/_next/data/icrEtxkRx7HLangO6erlo/nb/search/{search_word}/{num_type}/1/0.json?query={search_word}&searchType={num_type}&page=1&id=0"
-    resp = requests.get(url)
-    raw_search_result = dict(resp.json())["pageProps"]["initialState"][num_type]
-else:
-    print("Could not determine number type")
-    sys.exit(1)
+    # Happens for unlisted numbers
+    if "initialState" not in raw_search_result:
+        print(f"No results for '{search_word}'")
+        sys.exit(1)
 
-if raw_search_result:
-    print(f"{len(raw_search_result)} results from searching '{search_word}':\n")
-    match num_type:
-        case "companies":
-            results = [company(res) for res in raw_search_result]
-        case "persons":
-            results = [person(res) for res in raw_search_result]
-        case _:
-            results = []
-    for result in results:
-        print(result["name"])
-        print(result["street"])
-        print(result["area"])
-        if include_num:
-            print(f"Tlf: {result['phone_number']}")
-        print()
-else:
-    print(f"No match searching: {search_word}")
-    sys.exit(1)
+    state = raw_search_result["initialState"]
+
+    num_hits = state["totalHits"]
+    if num_hits == 0:
+        print(f"No results for '{search_word}'")
+        sys.exit(1)
+
+    companies = [filter_empty(company(res)) for res in state["companies"]]
+    persons = [filter_empty(person(res)) for res in state["persons"]]
+
+    plural = "s" if num_hits > 1 else ""
+    print(f"{num_hits} result{plural} for '{search_word}':\n")
+
+    for result in persons + companies:
+        print("\n".join(result.values()), end="\n\n")
 
 
+if __name__ == "__main__":
+    from sys import argv
+
+    prog, *args = argv
+    if not args:
+        print(f"Usage: {prog} <name or number>")
+        sys.exit()
+
+    main(" ".join(args))
