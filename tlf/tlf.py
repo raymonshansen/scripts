@@ -18,6 +18,47 @@ class SearchResult:
 
     Most properties can be empty, but printing the result directly
     will handle the display logic for you.
+
+    >>> SearchResult({
+    ...     "name": {
+    ...         "firstName": "Ola",
+    ...         "lastName": "Nordmann",
+    ...     },
+    ...     "addresses": [
+    ...         {
+    ...             "streetName": "Storgata",
+    ...             "streetNumber": "1",
+    ...             "postalCode": "1234",
+    ...             "postalArea": "Oslo",
+    ...         }
+    ...     ],
+    ...     "phones": [
+    ...         {
+    ...             "number": "12345678",
+    ...         }
+    ...     ],
+    ... })
+    SearchResult(name='Ola Nordmann', street='Storgata 1', area='1234 Oslo', phone_numbers=['12345678'])
+    >>> SearchResult({
+    ...     "name": "Nordmann AS",
+    ...     "addresses": [
+    ...         {
+    ...             "streetName": "Sjøgata",
+    ...             "streetNumber": "2",
+    ...             "postalCode": "9000",
+    ...             "postalArea": "Tromsø",
+    ...         }
+    ...     ],
+    ...     "phones": [
+    ...         {
+    ...             "number": "98765432",
+    ...         },
+    ...         {
+    ...             "number": "87654321",
+    ...         }
+    ...     ],
+    ... })
+    SearchResult(name='Nordmann AS', street='Sjøgata 2', area='9000 Tromsø', phone_numbers=['98765432', '87654321'])
     """
 
     name: str
