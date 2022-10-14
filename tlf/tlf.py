@@ -3,8 +3,14 @@ from typing import Tuple
 import requests
 import sys
 
-# This might change when Gulesider is updated
-BASE_URL = "https://www.gulesider.no/_next/data/icrEtxkRx7HLangO6erlo/nb/search"
+
+# The buildId for Gulesiders SPA changes every time they deploy
+# so we need to fetch it every time we want to search
+def get_url() -> str:
+    gulesider_src = requests.get("https://www.gulesider.no/").text
+    # The url is inside some embedded json, so we can just search for it
+    build_id = gulesider_src.split('"buildId":"')[1].split('"')[0]
+    return f"https://www.gulesider.no/_next/data/{build_id}/nb/search"
 
 
 def from_optional(dictionary: dict, *keys: str) -> str:
@@ -88,8 +94,9 @@ class SearchResult:
 
 
 def search_gulesider(query: str) -> Tuple[list[SearchResult], list[SearchResult]]:
+    url = get_url()
     # Searching for companies returns persons as well, so this url works for everything
-    resp = requests.get(f"{BASE_URL}/{query}/companies/1/0.json?query={query}")
+    resp = requests.get(f"{url}/{query}/companies/1/0.json?query={query}")
     # The response is for a SPA built on Next.js, so we can dig
     # directly into the page props for our data
     page_props = dict(resp.json())["pageProps"]
